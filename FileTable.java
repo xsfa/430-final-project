@@ -38,15 +38,16 @@ public class FileTable {
 
          // reset this inode flag
          if (inode.flag == USED_r || inode.flag == USED_1r) {
+            notify();
             inode.flag = UNUSED;
          } else if (inode.flag == USED_rw || inode.flag == USED_1rw) {
+            notify();
             inode.flag = UNUSED_w;
          }
 
          // save the corresponding inode to the disk
          inode.count -= 1;
          inode.toDisk(e.iNumber);
-         notify();
       }
 
       return found;
