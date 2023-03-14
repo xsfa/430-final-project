@@ -1,6 +1,6 @@
 public class SuperBlock {
     public int totalBlocks; // the number of disk blocks
-    public int totalInodes; // the number of inodes
+    public int inodeBlocks; // the number of inodes
     public int freeList; // the block number of the free list's head
 
     public SuperBlock(int diskSize) {
@@ -10,18 +10,18 @@ public class SuperBlock {
 
         // read content of buffer to initialize superblock object
         this.totalBlocks = SysLib.bytes2int(b, 0);
-        this.totalInodes = SysLib.bytes2int(b, 4);
+        this.inodeBlocks = SysLib.bytes2int(b, 4);
         this.freeList = SysLib.bytes2int(b, 8);
 
         // if disk contents are invalid
-        if (totalBlocks != diskSize || totalInodes <= 0 || freeList < 2) {
+        if (totalBlocks != diskSize || inodeBlocks <= 0 || freeList < 2) {
             this.totalBlocks = diskSize;
 
             // if total inode count is invalid
-            if (totalInodes <= 0) {
+            if (inodeBlocks <= 0) {
                 format(64); // format disk with max number of inodes
             } else {
-                format(totalInodes); // format disk with given number of inodes
+                format(inodeBlocks); // format disk with given number of inodes
             }
         }
     }
@@ -32,7 +32,7 @@ public class SuperBlock {
 
         // fill buffer with content from superblock object
         SysLib.int2bytes(totalBlocks, b, 0);
-        SysLib.int2bytes(totalInodes, b, 4);
+        SysLib.int2bytes(inodeBlocks , b, 4);
         SysLib.int2bytes(freeList, b, 8);
 
         // write buffer to disk as superblock
@@ -42,11 +42,11 @@ public class SuperBlock {
     void format(int files) {
         // initialize superblock contents and empty block buffer
         byte[] b = null;
-        this.totalInodes = files;
-        this.freeList = (totalInodes / 16) + 1;
+        this.inodeBlocks = files;
+        this.freeList = (inodeBlocks / 16) + 1;
 
         // initialize each inode and immediately write it back to disk
-        for (short i = 0; i < totalInodes; i++) {
+        for (short i = 0; i < inodeBlocks ; i++) {
             Inode inode = new Inode();
             inode.toDisk(i);
         }
