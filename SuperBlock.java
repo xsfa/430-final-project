@@ -16,7 +16,13 @@ public class SuperBlock {
         // if disk contents are invalid
         if (totalBlocks != diskSize || totalInodes <= 0 || freeList < 2) {
             this.totalBlocks = diskSize;
-            format(64); // format the disk with max number of inodes
+
+            // if total inode count is invalid
+            if (totalInodes <= 0) {
+                format(64); // format disk with max number of inodes
+            } else {
+                format(totalInodes); // format disk with given number of inodes
+            }
         }
     }
 
