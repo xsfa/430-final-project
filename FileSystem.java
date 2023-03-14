@@ -35,7 +35,8 @@ public class FileSystem {
     }
 
     public int format(int files) {
-        if (!filetable.fempty() || files < 0) return -1;
+        if (!filetable.fempty() || files < 0)
+            return -1;
 
         // format and initialize superblock and directory
         superblock.format(files);
@@ -46,7 +47,7 @@ public class FileSystem {
     }
 
     private boolean deallocAllBlocks(FileTableEntry fileTableEntry) {
-        synchronized(fileTableEntry) {
+        synchronized (fileTableEntry) {
 
             // loop through and dealloc direct pointers
             for (int i = 0; i < fileTableEntry.inode.direct.length; i++) {
@@ -90,7 +91,9 @@ public class FileSystem {
     public FileTableEntry open(String filename, String mode) {
         // create a new file table entry for this file name
         FileTableEntry fileTableEntry = filetable.falloc(filename, mode);
-        if ( mode.equals("w") ) if (this.deallocAllBlocks(fileTableEntry) == false) return null;
+        if (mode.equals("w"))
+            if (this.deallocAllBlocks(fileTableEntry) == false)
+                return null;
 
         return fileTableEntry;
     }
@@ -102,6 +105,7 @@ public class FileSystem {
 
     // TODO: implement
     public int read(FileTableEntry fileTableEntry, byte[] buffer) {
+
         return 0;
     }
 
@@ -115,9 +119,12 @@ public class FileSystem {
         // get the file table entry
         FileTableEntry fileTableEntry = open(filename, "w");
         // check if the file table entry is null
-        if (fileTableEntry == null) return false;
+        if (fileTableEntry == null)
+            return false;
         // deallocate all blocks, remove the file from the directory, and close the file
-        if (!this.deallocAllBlocks(fileTableEntry) || !directory.ifree(fileTableEntry.iNumber) || !this.close(fileTableEntry)) return false;
+        if (!this.deallocAllBlocks(fileTableEntry) || !directory.ifree(fileTableEntry.iNumber)
+                || !this.close(fileTableEntry))
+            return false;
         return true;
     }
 
@@ -127,12 +134,13 @@ public class FileSystem {
     }
 
     public boolean close(FileTableEntry fileTableEntry) {
-        synchronized(fileTableEntry) {
+        synchronized (fileTableEntry) {
             // decrement the thread count
             fileTableEntry.count--;
 
             // no threads sharing file, call ffree
-            if (fileTableEntry.count == 0) return filetable.ffree(fileTableEntry);
+            if (fileTableEntry.count == 0)
+                return filetable.ffree(fileTableEntry);
         }
         return true;
     }
