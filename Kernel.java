@@ -227,7 +227,7 @@ public class Kernel {
 						return fileSystem.seek(tableEntry, argSeek[0], argSeek[1]);
 					case FORMAT: // IMPLEMENTED 
 						// format disk
-						if (!fileSystem.format(param)) {
+						if (fileSystem.format(param) == -1) {
 							return ERROR;
 						}
 						return OK;

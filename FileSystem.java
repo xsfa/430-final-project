@@ -34,15 +34,15 @@ public class FileSystem {
         superblock.sync();
     }
 
-    public boolean format(int files) {
-        if (!filetable.fempty() || files < 0) return false;
+    public int format(int files) {
+        if (!filetable.fempty() || files < 0) return -1;
 
         // format and initialize superblock and directory
         superblock.format(files);
         directory = new Directory(this.superblock.inodeBlocks);
         filetable = new FileTable(this.directory);
 
-        return true;
+        return 0;
     }
 
     private boolean deallocAllBlocks(FileTableEntry fileTableEntry) {
