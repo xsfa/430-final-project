@@ -225,13 +225,13 @@ public class Kernel {
 							return ERROR;
 						}
 						return fileSystem.seek(tableEntry, argSeek[0], argSeek[1]);
-					case FORMAT: // to be implemented in project
+					case FORMAT: // IMPLEMENTED 
 						// format disk
 						if (!fileSystem.format(param)) {
 							return ERROR;
 						}
 						return OK;
-					case DELETE: // to be implemented in project
+					case DELETE: // IMPLEMENTED
 						// delete file
 						if (!fileSystem.delete((String) args)) {
 							return ERROR;

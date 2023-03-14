@@ -111,18 +111,18 @@ public class FileSystem {
     }
 
     // gets the file table entry for the file name removes the file
-    public int delete(String filename) {
+    public boolean delete(String filename) {
         // get the file table entry
         FileTableEntry fileTableEntry = open(filename, "w");
         // check if the file table entry is null
-        if (fileTableEntry == null) return -1;
+        if (fileTableEntry == null) return false;
         // deallocate all blocks, remove the file from the directory, and close the file
-        if (!this.deallocAllBlocks(fileTableEntry) || !directory.ifree(fileTableEntry.iNumber) || !this.close(fileTableEntry)) return -1;
-        return 0;
+        if (!this.deallocAllBlocks(fileTableEntry) || !directory.ifree(fileTableEntry.iNumber) || !this.close(fileTableEntry)) return false;
+        return true;
     }
 
     // TODO: IMPLEMENT
-    public int seek() {
+    public int seek(FileTableEntry fileTableEntry, int offset, int whence) {
         return 0;
     }
 
