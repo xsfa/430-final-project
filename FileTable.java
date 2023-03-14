@@ -36,59 +36,83 @@ public class FileTable {
          }
 
          inode = new Inode(iNumber);
-         
+
          // UNUSED
          if (inode.flag == UNUSED) {
             inode.flag = USED_r;
             fileNameEntry = new FileTableEntry(inode, iNumber, mode);
             break;
-            
-         // USED_r
+
+            // USED_r
          } else if (inode.flag == USED_r) {
             if (mode == "r") {
                inode.flag = USED_1r;
                fileNameEntry = new FileTableEntry(inode, iNumber, mode);
                break;
-            } else { try { wait(); } catch (InterruptedException e) { e.printStackTrace(); } }
+            } else {
+               try {
+                  wait();
+               } catch (InterruptedException e) {
+                  e.printStackTrace();
+               }
+            }
 
-         // USED_1r
+            // USED_1r
          } else if (inode.flag == USED_1r) {
             if (mode.equals("r")) {
                fileNameEntry = new FileTableEntry(inode, iNumber, mode);
                break;
 
-            } else { try { wait(); } catch (InterruptedException e) { e.printStackTrace(); } }
+            } else {
+               try {
+                  wait();
+               } catch (InterruptedException e) {
+                  e.printStackTrace();
+               }
+            }
 
-         // UNUSED_w
+            // UNUSED_w
          } else if (inode.flag == UNUSED_w) {
             if (mode.equals("r")) {
                inode.flag = USED_rw;
                fileNameEntry = new FileTableEntry(inode, iNumber, mode);
                break;
 
-            // USED_rw
+               // USED_rw
             } else {
                inode.flag = USED_rw;
                fileNameEntry = new FileTableEntry(inode, iNumber, mode);
                break;
             }
 
-         // USED_rw
+            // USED_rw
          } else if (inode.flag == USED_rw) {
             if (mode.equals("r")) {
                inode.flag = USED_1rw;
                fileNameEntry = new FileTableEntry(inode, iNumber, mode);
                break;
 
-            } else { try { wait(); } catch (InterruptedException e) { e.printStackTrace(); } }
+            } else {
+               try {
+                  wait();
+               } catch (InterruptedException e) {
+                  e.printStackTrace();
+               }
+            }
 
-         // USED_1rw
+            // USED_1rw
          } else if (inode.flag == USED_1rw) {
             if (mode.equals("r")) {
                fileNameEntry = new FileTableEntry(inode, iNumber, mode);
                break;
 
-            } else { try { wait(); } catch (InterruptedException e) { e.printStackTrace(); } }
+            } else {
+               try {
+                  wait();
+               } catch (InterruptedException e) {
+                  e.printStackTrace();
+               }
+            }
          }
       }
 
@@ -96,6 +120,8 @@ public class FileTable {
       inode.count += 1;
       // immediately write back this inode to the disk
       inode.toDisk(fileNameEntry.iNumber);
+      // add table to disk
+      table.addElement(fileNameEntry);
       // return a reference to this file (structure) table entry
       return fileNameEntry;
    }
