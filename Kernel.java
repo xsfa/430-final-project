@@ -48,7 +48,6 @@ public class Kernel {
 	// System thread references
 	private static Scheduler scheduler;
 	private static Disk disk;
-	private static Cache cache;
 	private static FileSystem fileSystem;
 
 	// Synchronized Queues
@@ -76,9 +75,6 @@ public class Kernel {
 						// instantiate and start a disk
 						disk = new Disk(1000);
 						disk.start();
-
-						// instantiate a cache memory
-						cache = new Cache(disk.blockSize, 10);
 
 						// instantiate synchronized queues
 						ioQueue = new SyncQueue();
@@ -178,16 +174,6 @@ public class Kernel {
 								break;
 						}
 						return OK;
-					case CREAD: // to be implemented in assignment 4
-						return cache.read(param, (byte[]) args) ? OK : ERROR;
-					case CWRITE: // to be implemented in assignment 4
-						return cache.write(param, (byte[]) args) ? OK : ERROR;
-					case CSYNC: // to be implemented in assignment 4
-						cache.sync();
-						return OK;
-					case CFLUSH: // to be implemented in assignment 4
-						cache.flush();
-						return OK;
 					case OPEN: // to be implemented in project
 						// open file
 						String[] arguments = (String[]) args;
@@ -225,7 +211,7 @@ public class Kernel {
 							return ERROR;
 						}
 						return fileSystem.seek(tableEntry, argSeek[0], argSeek[1]);
-					case FORMAT: // IMPLEMENTED 
+					case FORMAT: // IMPLEMENTED
 						// format disk
 						if (fileSystem.format(param) == -1) {
 							return ERROR;
