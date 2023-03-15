@@ -4,9 +4,9 @@ public class FileSystem {
     private FileTable filetable;
     private SuperBlock superblock;
 
-    public FileSystem(int totalBlocks) {
+    public FileSystem(int diskBlocks) {
         // create superblock
-        superblock = new SuperBlock(totalBlocks);
+        superblock = new SuperBlock(diskBlocks);
         // create directory
         directory = new Directory(this.superblock.inodeBlocks);
         // create file table
@@ -105,13 +105,73 @@ public class FileSystem {
 
     // TODO: implement
     public int read(FileTableEntry fileTableEntry, byte[] buffer) {
+        // param check
+        if (fileTableEntry == null) {
+            return 0;
+        }
 
-        return 0;
+        // empty block buffer
+        byte[] b = new byte[Disk.blockSize];
+
+        // define markers and variables
+        int position = 0;
+        int count = 0;
+        int seekPtr = fileTableEntry.seekPtr;
+        int seekDiff = fileTableEntry.inode.length - seekPtr;
+        int blkNumber = fileTableEntry.inode.findTargetBlock(seekPtr);
+
+        // set amount left to read to smallest possible
+        if (seekDiff < buffer.length) {
+            count = seekDiff;
+        } else {
+            count = buffer.length;
+        }
+
+        int finalPtr = seekPtr + count;
+
+        synchronized (fileTableEntry) {
+            while (seekPtr < finalPtr && blkNumber != -1) {
+                int offset = seekPtr % Disk.blockSize;
+                int countLength = 0;
+                int countPosDiff = (count - position);
+                int offsetDiff = (b.length - offset);
+
+                // set amount left to read to smallest possible
+                if (countPosDiff < offsetDiff) {
+                    countLength = countPosDiff;
+                } else {
+                    countLength = offsetDiff;
+                }
+
+                // read to buffer
+                System.arraycopy(b, offset, buffer, position, countLength);
+
+                // update seek pointer
+                fileTableEntry.seekPtr += countLength;
+                position += countLength;
+            }
+        }
+
+        return position;
     }
 
     // TODO: implement
     public int write(FileTableEntry fileTableEntry, byte[] buffer) {
-        return 0;
+        int bufLength = buffer.length;
+        int bytesCount = 0;
+        int bytesLeft = 0;
+        int bytesTotal = 0;
+        int offset = 0;
+        int position = 0;
+        int seekPtr = fileTableEntry.seekPtr;
+        byte[] b = new byte[Disk.blockSize];
+
+        while (position < bufLength) {
+            offset = seek
+
+        }
+
+        return position;
     }
 
     // gets the file table entry for the file name removes the file
@@ -128,9 +188,31 @@ public class FileSystem {
         return true;
     }
 
-    // TODO: IMPLEMENT
+    // updates seek pointer of file in table entry
     public int seek(FileTableEntry fileTableEntry, int offset, int whence) {
-        return 0;
+        int totalOffset = 0;
+        int iLength = fileTableEntry.inode.length;
+
+        // determine total offset
+        if (whence == 0) { // if seek from beginning
+            totalOffset = offset;
+        } else if (whence == 1) { // if seek from current
+            totalOffset = (fileTableEntry.seekPtr + offset);
+        } else if (whence == 2) { // if seek from end
+            totalOffset = (iLength + offset);
+        }
+
+        // set offset cap to length of inode
+        if (totalOffset > iLength) {
+            totalOffset = iLength;
+        }
+
+        // set seek pointer
+        synchronized (fileTableEntry) {
+            fileTableEntry.seekPtr = totalOffset;
+        }
+
+        return totalOffset;
     }
 
     public boolean close(FileTableEntry fileTableEntry) {
