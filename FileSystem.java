@@ -103,7 +103,6 @@ public class FileSystem {
         return fileTableEntry.inode.length;
     }
 
-    // TODO: implement
     public int read(FileTableEntry fileTableEntry, byte[] buffer) {
         // param check
         if (fileTableEntry == null) {
@@ -155,23 +154,92 @@ public class FileSystem {
         return position;
     }
 
-    // TODO: implement
     public int write(FileTableEntry fileTableEntry, byte[] buffer) {
-        int bufLength = buffer.length;
-        int bytesCount = 0;
-        int bytesLeft = 0;
-        int bytesTotal = 0;
-        int offset = 0;
-        int position = 0;
-        int seekPtr = fileTableEntry.seekPtr;
-        byte[] b = new byte[Disk.blockSize];
+        synchronized (fileTableEntry) {
+            byte[] b = null;
+            Inode inode = fileTableEntry.inode;
+            int bufLength = buffer.length;
+            int blkNumber = 0;
+            int blkSize = Disk.blockSize;
+            int bytesCount = 0;
+            int bytesLeft = 0;
+            int bytesTotal = 0;
+            int offset = 0;
+            int position = 0;
+            int seekPtr = fileTableEntry.seekPtr;
 
-        while (position < bufLength) {
-            offset = seek
+            while (position < bufLength) {
+                // determine amount to write; find block
+                b = new byte[blkSize];
+                bytesCount = (blkSize - offset);
+                bytesLeft = bufLength - position;
+                offset = (seekPtr % blkSize);
+                blkNumber = inode.findTargetBlock(offset);
 
+                // only write to as many bytes as possible
+                if (bytesCount < bytesLeft) {
+                    bytesTotal = bytesCount;
+                } else {
+                    bytesTotal = bytesLeft;
+                }
+
+                // if block is not found
+                if (blkNumber == -1) {
+                    // get free block
+                    blkNumber = superblock.getFreeBlock();
+
+                    // if no space left, unable to write
+                    if (blkNumber == -1) {
+                        return -1;
+                    }
+
+                    // if block is already registered
+                    if (inode.registerTargetBlock(seekPtr, (short) blkNumber) == -1) {
+                        if (inode.registerIndexBlock((short) blkNumber) == false) {
+                            return -1;
+                        }
+
+                        // get another free block
+                        blkNumber = superblock.getFreeBlock();
+
+                        // if no space left, unable to write
+                        if (blkNumber == -1) {
+                            return -1;
+                        }
+
+                        // if block is already registered again
+                        if (inode.registerTargetBlock(seekPtr, (short) blkNumber) == -1) {
+                            return -1;
+                        }
+                    }
+                }
+
+                // if block number is invalid
+                if (blkNumber >= superblock.totalBlocks) {
+                    return -1;
+                }
+
+                // finally, write from target block to disk
+                SysLib.rawread(blkNumber, b);
+                System.arraycopy(buffer, position, b, offset, bytesTotal);
+                SysLib.rawwrite(blkNumber, b);
+
+                // adjust pointers for loop
+                position += bytesTotal;
+                seekPtr += bytesTotal;
+            }
+
+            // if file was written beyond size, increase it
+            if (seekPtr > inode.length) {
+                inode.length = seekPtr;
+            }
+
+            // update seek pointer and save inode to disk
+            seek(fileTableEntry, position, 1);
+            inode.toDisk(fileTableEntry.iNumber);
+
+            return position;
         }
-
-        return position;
     }
 
     // gets the file table entry for the file name removes the file
