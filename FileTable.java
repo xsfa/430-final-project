@@ -1,128 +1,68 @@
 import java.util.Vector;
 
+import javax.xml.namespace.QName;
+
 public class FileTable {
    private Vector table; // the actual entity of this file table
    private Directory dir; // the root directory
-
-   // define inode flags
-   final static char UNUSED = 0; // 0 = unused
-   final static char USED_r = 1; // 1 = used(r)
-   final static char USED_1r = 2; // 2 = used(!r)
-   final static char UNUSED_w = 3; // 3 = unused(wreg)
-   final static char USED_rw = 4; // 4 = used(r,wreg)
-   final static char USED_1rw = 5; // 5 = used(!r,wreg)
 
    public FileTable(Directory directory) { // constructor
       table = new Vector(); // instantiate a file (structure) table
       dir = directory; // receive a reference to the Director
    } // from the file system
 
-   // IMPLEMENT
    public synchronized FileTableEntry falloc(String filename, String mode) {
-      // allocate a new file (structure) table entry for this file name
-      FileTableEntry fileNameEntry;
+      // allocate a new file table entry for this file name
+      short iNumber = dir.namei(filename);
       Inode inode = null;
 
-      // allocate/retrieve and register the corresponding inode using dir
-      while (true) {
-         short iNumber = dir.namei(filename);
+      // file does not exist
+      if(iNumber == -1) {
+         // trying to read empty file
+         if(mode.equals("r")) return null;
 
-         if (iNumber == -1) {
-            if (mode.equals("r")) {
-               return null;
-            } else {
-               iNumber = dir.ialloc(filename);
-            }
-         }
+         // new file
+         iNumber = dir.ialloc(filename);
+         inode = new Inode();
+         inode.flag = 2;
 
+      } else {
+         // file exists
          inode = new Inode(iNumber);
 
-         // UNUSED
-         if (inode.flag == UNUSED) {
-            inode.flag = USED_r;
-            fileNameEntry = new FileTableEntry(inode, iNumber, mode);
-            break;
+         while(true) {
+            if(mode.equals("r")) {
+               // reading
+               if(inode.flag == 0 || inode.flag == 1) {
+                  inode.flag = 1;
+                  break;
 
-            // USED_r
-         } else if (inode.flag == USED_r) {
-            if (mode == "r") {
-               inode.flag = USED_1r;
-               fileNameEntry = new FileTableEntry(inode, iNumber, mode);
-               break;
-            } else {
-               try {
-                  wait();
-               } catch (InterruptedException e) {
-                  e.printStackTrace();
+               } else {
+                  try { wait(); } catch(InterruptedException e) {}
                }
-            }
-
-            // USED_1r
-         } else if (inode.flag == USED_1r) {
-            if (mode.equals("r")) {
-               fileNameEntry = new FileTableEntry(inode, iNumber, mode);
-               break;
-
             } else {
-               try {
-                  wait();
-               } catch (InterruptedException e) {
-                  e.printStackTrace();
-               }
-            }
+               // can write
+               if(inode.flag == 0) {
+                  inode.flag = 2;
+                  break;
 
-            // UNUSED_w
-         } else if (inode.flag == UNUSED_w) {
-            if (mode.equals("r")) {
-               inode.flag = USED_rw;
-               fileNameEntry = new FileTableEntry(inode, iNumber, mode);
-               break;
-
-               // USED_rw
-            } else {
-               inode.flag = USED_rw;
-               fileNameEntry = new FileTableEntry(inode, iNumber, mode);
-               break;
-            }
-
-            // USED_rw
-         } else if (inode.flag == USED_rw) {
-            if (mode.equals("r")) {
-               inode.flag = USED_1rw;
-               fileNameEntry = new FileTableEntry(inode, iNumber, mode);
-               break;
-
-            } else {
-               try {
-                  wait();
-               } catch (InterruptedException e) {
-                  e.printStackTrace();
-               }
-            }
-
-            // USED_1rw
-         } else if (inode.flag == USED_1rw) {
-            if (mode.equals("r")) {
-               fileNameEntry = new FileTableEntry(inode, iNumber, mode);
-               break;
-
-            } else {
-               try {
-                  wait();
-               } catch (InterruptedException e) {
-                  e.printStackTrace();
+               } else {
+                  try { wait(); } catch(InterruptedException e) {}
                }
             }
          }
       }
-
       // increment this inode's count
       inode.count += 1;
+
       // immediately write back this inode to the disk
-      inode.toDisk(fileNameEntry.iNumber);
-      // add table to disk
+      inode.toDisk(iNumber);
+
+      // add new table entry to disk
+      FileTableEntry fileNameEntry = new FileTableEntry(inode, iNumber, mode);
       table.addElement(fileNameEntry);
-      // return a reference to this file (structure) table entry
+
+      // return a reference to this file table entry
       return fileNameEntry;
    }
 
@@ -135,12 +75,14 @@ public class FileTable {
          Inode inode = e.inode;
 
          // reset this inode flag
-         if (inode.flag == USED_r || inode.flag == USED_1r) {
-            notify();
-            inode.flag = UNUSED;
-         } else if (inode.flag == USED_rw || inode.flag == USED_1rw) {
-            notify();
-            inode.flag = UNUSED_w;
+         if (inode.flag == 1) {
+            inode.flag = 0;
+         } else if (inode.flag == 2) {
+            inode.flag = 0;
+         } else if (inode.flag == 4) {
+            inode.flag = 3;
+         } else if (inode.flag == 5) {
+            inode.flag = 3;
          }
 
          // save the corresponding inode to the disk

@@ -153,13 +153,14 @@ public class Kernel {
 								System.out.println("threadOS: caused read errors");
 								return ERROR;
 							default:
-								myTcb = scheduler.getMyTcb();
-								tableEntry = myTcb.getFtEnt(param);
+								if ((myTcb = scheduler.getMyTcb()) != null) {
+									tableEntry = myTcb.getFtEnt(param);
 
-								if (tableEntry == null) {
-									return ERROR;
+									if (tableEntry == null) {
+										return ERROR;
+									}
+									return fileSystem.read(tableEntry, (byte[]) args);
 								}
-								return fileSystem.read(tableEntry, (byte[]) args);
 						}
 					case WRITE:
 						switch (param) {
@@ -172,7 +173,15 @@ public class Kernel {
 							case STDERR:
 								System.err.print((String) args);
 								break;
-						}
+							default:
+								myTcb = scheduler.getMyTcb();
+								tableEntry = myTcb.getFtEnt(param);
+
+								if (tableEntry == null) {
+									return ERROR;
+								}
+								return fileSystem.write(tableEntry, (byte[]) args);
+						}	
 						return OK;
 					case OPEN: // to be implemented in project
 						// open file
@@ -188,7 +197,7 @@ public class Kernel {
 						myTcb = scheduler.getMyTcb();
 						tableEntry = myTcb.getFtEnt(param);
 
-						if (tableEntry == null || !fileSystem.close(tableEntry)) {
+						if (tableEntry == null || myTcb.returnFd(param) != tableEntry || !fileSystem.close(tableEntry)) {
 							return ERROR;
 						}
 						return OK;

@@ -1,4 +1,3 @@
-// TODO: ADD COMMENTS TO FUNCTIONS
 public class FileSystem {
     private Directory directory;
     private FileTable filetable;
@@ -92,8 +91,7 @@ public class FileSystem {
         // create a new file table entry for this file name
         FileTableEntry fileTableEntry = filetable.falloc(filename, mode);
         if (mode.equals("w"))
-            if (this.deallocAllBlocks(fileTableEntry) == false)
-                return null;
+            if (this.deallocAllBlocks(fileTableEntry) == false) return null;
 
         return fileTableEntry;
     }
@@ -105,53 +103,42 @@ public class FileSystem {
 
     public int read(FileTableEntry fileTableEntry, byte[] buffer) {
         // param check
-        if (fileTableEntry == null) {
+        if (fileTableEntry == null || buffer == null) {
             return 0;
         }
 
-        // empty block buffer
-        byte[] b = new byte[Disk.blockSize];
-
-        // define markers and variables
-        int position = 0;
-        int count = 0;
-        int seekPtr = fileTableEntry.seekPtr;
-        int seekDiff = fileTableEntry.inode.length - seekPtr;
-        int blkNumber = fileTableEntry.inode.findTargetBlock(seekPtr);
-
-        // set amount left to read to smallest possible
-        if (seekDiff < buffer.length) {
-            count = seekDiff;
-        } else {
-            count = buffer.length;
-        }
-
-        int finalPtr = seekPtr + count;
-
+        int len = buffer.length;
+        
         synchronized (fileTableEntry) {
-            while (seekPtr < finalPtr && blkNumber != -1) {
-                int offset = seekPtr % Disk.blockSize;
-                int countLength = 0;
-                int countPosDiff = (count - position);
-                int offsetDiff = (b.length - offset);
-
-                // set amount left to read to smallest possible
-                if (countPosDiff < offsetDiff) {
-                    countLength = countPosDiff;
-                } else {
-                    countLength = offsetDiff;
+            // read from file
+            while (len > 0) {
+                // get block number
+                int blockNum = fileTableEntry.inode.findTargetBlock(fileTableEntry.seekPtr);
+                if (blockNum == -1) {
+                    break;
                 }
 
-                // read to buffer
-                System.arraycopy(b, offset, buffer, position, countLength);
+                // get block
+                byte[] b = new byte[Disk.blockSize];
+                SysLib.rawread(blockNum, b);
 
-                // update seek pointer
-                fileTableEntry.seekPtr += countLength;
-                position += countLength;
+                // get offset
+                int offset = fileTableEntry.seekPtr % Disk.blockSize;
+
+                // get amount to read
+                int amount = Math.min(Disk.blockSize - offset, len);
+
+                // read to buffer
+                System.arraycopy(b, offset, buffer, buffer.length - len, amount);
+
+                // update seek pointer and length
+                fileTableEntry.seekPtr += amount;
+                len -= amount;
             }
         }
 
-        return position;
+        // return amount read
+        return buffer.length - len;
     }
 
     public int write(FileTableEntry fileTableEntry, byte[] buffer) {
@@ -241,7 +228,7 @@ public class FileSystem {
             return position;
         }
     }
-
+    
     // gets the file table entry for the file name removes the file
     public boolean delete(String filename) {
         // get the file table entry
