@@ -1,13 +1,8 @@
-# CSS 430 - Final Project
+# ThreadOS File System - CSS430 Final Project
 
-## 03/14 Status Update
+This is an implementation of a working file system in Java for UW's ThreadOS. It emulates a UNIX file system with minor differences by implementing inodes, superblocks, file tables and entries, and other components. It is able to allocate and deallocate space, create a virtual directory, and handles active readers and/or writers accordingly.
 
-Status update:
-
-- SuperBlock.java -- works 100%
-- Directory.java -- works 100%
-- FileTable.java -- does not go beyond test 2 (file open)
-- Kernel.java -- goes through test but fails most of them
+More information on the project can be found here: https://courses.washington.edu/css430/prog/dimpsey/finalproject.html
 
 ## Responsibilities
 
